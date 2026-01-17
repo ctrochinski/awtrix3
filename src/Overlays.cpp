@@ -55,28 +55,8 @@ void NotifyOverlay(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, GifPl
     // Check if notification duration has expired or if repeat count is 0 and hold is not enabled
     if ((((millis() - notifications[0].startime >= notifications[0].duration) && notifications[0].repeat == -1) || notifications[0].repeat == 0) && !notifications[0].hold)
     {
-        // Reset notification flags and exit function
         DEBUG_PRINTLN(F("Notification deleted"));
-        PeripheryManager.stopSound();
-        if (notifications.size() >= 2)
-        {
-            notifications[1].startime = millis();
-        }
-        notifications[0].icon.close();
-        notifications.erase(notifications.begin());
-
-        if (notifications[0].wakeup && MATRIX_OFF)
-        {
-            DisplayManager.setBrightness(0);
-        }
-
-        if (notifications.empty())
-        {
-            notifyFlag = false;
-            if (AUTO_TRANSITION)
-                DisplayManager.forceNextApp();
-        }
-
+        DisplayManager.cleanupNotification();
         return;
     }
 
