@@ -1399,25 +1399,48 @@ void DisplayManager_::selectButtonLong()
 
 void DisplayManager_::dismissNotify()
 {
-  bool wakeup;
-  if (!notifications.empty())
+  cleanupNotification();
+}
+
+void DisplayManager_::cleanupNotification()
+{
+  if (notifications.empty())
+    return;
+
+  // Save wakeup state BEFORE erasing (fixes crash bug)
+  bool wakeup = notifications[0].wakeup;
+
+  // Reset next notification's start time if stacked
+  if (notifications.size() >= 2)
   {
-    if (notifications.size() >= 2)
-    {
-      notifications[1].startime = millis();
-    }
-    wakeup = notifications[0].wakeup;
-    notifications[0].icon.close();
-    notifications.erase(notifications.begin());
-    PeripheryManager.stopSound();
+    notifications[1].startime = millis();
   }
+
+  // Close icon file handle
+  notifications[0].icon.close();
+
+  // Stop any playing sound
+  PeripheryManager.stopSound();
+
+  // Remove from queue
+  notifications.erase(notifications.begin());
+
+  // Handle display wakeup cleanup (using saved wakeup state)
+  if (wakeup && MATRIX_OFF)
+  {
+    DisplayManager.setBrightness(0);
+  }
+
+  // Update state when last notification cleared
   if (notifications.empty())
   {
-    if (wakeup && MATRIX_OFF)
+    notifyFlag = false;
+    if (AUTO_TRANSITION)
     {
-      DisplayManager.setBrightness(0);
+      DisplayManager.forceNextApp();
     }
   }
+  // If notifications remain, CURRENT_APP stays "Notification" (NotifyOverlay sets it)
 }
 
 bool DisplayManager_::switchToApp(const char *json)
